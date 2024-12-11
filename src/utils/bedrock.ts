@@ -1,5 +1,20 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 
+// レスポンス型の定義
+interface BedrockResponse {
+  content: Array<{
+    type: string;
+    text: string;
+  }>;
+  id: string;
+  model: string;
+  role: string;
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
 const createBedrockClient = () => {
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
@@ -71,7 +86,7 @@ ${Object.entries(userResponses)
     });
 
     const response = await client.send(command);
-    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+    const responseBody = JSON.parse(new TextDecoder().decode(response.body)) as BedrockResponse;
     
     // デバッグ用ログ
     console.log('API Response Structure:', JSON.stringify(responseBody, null, 2));
@@ -82,8 +97,7 @@ ${Object.entries(userResponses)
       throw new Error('APIレスポンスの形式が不正です');
     }
 
-    // content配列から最初のテキストコンテンツを取得
-    const textContent = responseBody.content.find(item => item.type === 'text')?.text;
+    const textContent = responseBody.content.find((item: { type: string; text: string }) => item.type === 'text')?.text;
     if (!textContent) {
       throw new Error('テキストコンテンツが見つかりません');
     }

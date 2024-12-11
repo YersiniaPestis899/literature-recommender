@@ -1,0 +1,17 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://your-domain.vercel.app
+
+# Sitemaps
+Sitemap: https://your-domain.vercel.app/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 10
+
+# Specific directives
+Disallow: /api/
+Disallow: /_next/
+Disallow: /*?
