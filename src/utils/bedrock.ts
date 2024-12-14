@@ -1,4 +1,5 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import { findBookstoreLinks, BookRecommendation } from './bookstore';
 
 // レスポンス型の定義
 interface BedrockResponse {
@@ -15,6 +16,7 @@ interface BedrockResponse {
   };
 }
 
+// Bedrockクライアント作成ユーティリティ
 const createBedrockClient = () => {
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
@@ -33,10 +35,12 @@ const createBedrockClient = () => {
   });
 };
 
+// メインの推薦機能
 export async function getRecommendations(userResponses: Record<string, string>) {
   try {
     const client = createBedrockClient();
     
+    // プロンプトの構築
     const prompt = `
 文学作品の専門家として、以下のユーザーの回答に基づいて、最適な文学作品を3-5作品推薦してください。
 
@@ -60,6 +64,7 @@ ${Object.entries(userResponses)
 
 クラシックな作品から現代文学まで幅広く検討し、各作品について説得力のある推薦理由を提供してください。必ず上記のJSON形式で返してください。他の説明は不要です。`;
 
+    // APIリクエストの構築
     const command = new InvokeModelCommand({
       modelId: "anthropic.claude-3-5-sonnet-20241022-v2:0",
       contentType: "application/json",
@@ -85,6 +90,7 @@ ${Object.entries(userResponses)
       })
     });
 
+    // APIリクエストの実行とレスポンス処理
     const response = await client.send(command);
     const responseBody = JSON.parse(new TextDecoder().decode(response.body)) as BedrockResponse;
     
@@ -110,7 +116,22 @@ ${Object.entries(userResponses)
         throw new Error('レコメンデーションデータの形式が不正です');
       }
 
-      return recommendations;
+      // 各レコメンデーションに購入リンクを追加
+      const enhancedRecommendations = await Promise.all(
+        recommendations.recommendations.map(async (book: BookRecommendation) => {
+          const purchaseLinks = await findBookstoreLinks({
+            title: book.title,
+            author: book.author
+          });
+          return {
+            ...book,
+            purchaseLinks
+          };
+        })
+      );
+
+      return { recommendations: enhancedRecommendations };
+
     } catch (parseError) {
       console.error('Parse error:', parseError);
       throw new Error('レコメンデーション結果の解析に失敗しました');
