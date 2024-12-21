@@ -30,8 +30,9 @@ interface BookRecommendation {
   author: string;
   reason: string;
   genre: string;
-  matchType: 'precise' | 'discovery';
+  matchType: 'precise' | 'discovery' | 'ultra-rare';
   amazonLink?: string;
+  rarity?: string;
 }
 
 export default function Home() {
@@ -68,15 +69,29 @@ export default function Home() {
   }
 
   const getMatchTypeLabel = (matchType: string) => {
-    return matchType === 'precise' 
-      ? '興味に合致' 
-      : '新しい発見';
+    switch (matchType) {
+      case 'precise':
+        return '興味に合致';
+      case 'discovery':
+        return '新しい発見';
+      case 'ultra-rare':
+        return '稀少な逸品';
+      default:
+        return '';
+    }
   };
 
   const getMatchTypeStyle = (matchType: string) => {
-    return matchType === 'precise'
-      ? 'bg-indigo-50 text-indigo-700'
-      : 'bg-emerald-50 text-emerald-700';
+    switch (matchType) {
+      case 'precise':
+        return 'bg-indigo-50 text-indigo-700';
+      case 'discovery':
+        return 'bg-emerald-50 text-emerald-700';
+      case 'ultra-rare':
+        return 'bg-purple-50 text-purple-700 ring-2 ring-purple-200';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -186,7 +201,11 @@ export default function Home() {
                 {recommendations.map((book, index) => (
                   <div
                     key={index}
-                    className="bg-white backdrop-blur-sm bg-opacity-80 p-6 rounded-xl shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-md"
+                    className={`bg-white backdrop-blur-sm bg-opacity-80 p-6 rounded-xl shadow-sm border ${
+                      book.matchType === 'ultra-rare' 
+                        ? 'border-purple-200 shadow-purple-100' 
+                        : 'border-gray-100'
+                    } transition-all duration-300 hover:shadow-md`}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-grow">
@@ -208,6 +227,11 @@ export default function Home() {
                     
                     <div className="prose prose-gray max-w-none mb-4">
                       <p className="text-gray-700 leading-relaxed">{book.reason}</p>
+                      {book.rarity && (
+                        <p className="mt-2 text-purple-700 text-sm leading-relaxed">
+                          {book.rarity}
+                        </p>
+                      )}
                     </div>
 
                     {book.amazonLink && (
